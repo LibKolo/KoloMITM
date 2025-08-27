@@ -2,7 +2,7 @@
 coroutines = "1.10.2"
 log4j = "2.25.1"
 jackson = "2.19.2"
-minecraftauth = "4.1.1"
+minecraftauth = "4.1.2"
 includedBuildName = "Composite-Build"
 
 [libraries]
