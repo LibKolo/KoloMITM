@@ -16,6 +16,7 @@ import io.github.mucute.qwq.kolomitm.jackson.NbtDefinitionSerializer
 import io.github.mucute.qwq.kolomitm.session.EventUnregister
 import io.github.mucute.qwq.kolomitm.session.KoloSession
 import io.github.mucute.qwq.kolomitm.util.*
+import net.kyori.adventure.text.Component
 import org.cloudburstmc.nbt.NbtMap
 import org.cloudburstmc.protocol.bedrock.codec.v729.serializer.InventoryContentSerializer_v729
 import org.cloudburstmc.protocol.bedrock.codec.v729.serializer.InventorySlotSerializer_v729
@@ -183,7 +184,7 @@ fun KoloSession.proxyPassReceiver(
                 }
             }.exceptionOrNull()?.let {
                 inbound(DisconnectPacket().apply {
-                    kickMessage = it.message.toString()
+                    kickMessage = Component.text(it.message.toString())
                 })
             }
         }
@@ -388,9 +389,8 @@ fun KoloSession.echoCommandReceiver(): Pair<EventUnregister, EventUnregister> {
                 else -> {
                     inbound(TextPacket().apply {
                         type = TextPacket.Type.RAW
-                        isNeedsTranslation = false
                         sourceName = ""
-                        message = it.joinToString(separator = " ")
+                        message = Component.text(it.joinToString(separator = " "))
                         xuid = ""
                     })
                 }
@@ -430,11 +430,11 @@ fun KoloSession.packDownloaderReceiver(
         val packet = packetEvent.packet
         if (packet is ResourcePacksInfoPacket) {
             for (entry in packet.resourcePackInfos) {
-                packDownloader.registerPack(entry.packId, entry.cdnUrl, entry.contentKey);
+                packDownloader.registerPack(entry.packId, entry.cdnUrl, entry.contentKey)
             }
         }
         if (packet is ResourcePackChunkDataPacket) {
-            packDownloader.addChunk(packet.packId, packet.chunkIndex, packet.data.retain());
+            packDownloader.addChunk(packet.packId, packet.chunkIndex, packet.data.retain())
         }
         if (packet is ResourcePackClientResponsePacket) {
             if (packet.status == ResourcePackClientResponsePacket.Status.COMPLETED) {

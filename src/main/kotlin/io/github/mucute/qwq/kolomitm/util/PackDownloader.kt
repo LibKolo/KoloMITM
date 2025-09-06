@@ -204,10 +204,10 @@ class PackDownloader(private val packsPath: Path) : AutoCloseable {
             contents.readBytes(encryptedContents)
             Files.write(fs.getPath("/contents.json"), cipher.doFinal(encryptedContents))
             val contentsArray = JsonParser.parseString(Files.readString(fs.getPath("/contents.json")))
-                .getAsJsonObject().getAsJsonArray("content")
+                .asJsonObject.getAsJsonArray("content")
 
             for (element in contentsArray) {
-                val contentItem = element.getAsJsonObject()
+                val contentItem = element.asJsonObject
                 if (!contentItem.has("key") || contentItem.get("key").isJsonNull) continue
                 val key = contentItem.get("key").asString
                 val path = contentItem.get("path").asString

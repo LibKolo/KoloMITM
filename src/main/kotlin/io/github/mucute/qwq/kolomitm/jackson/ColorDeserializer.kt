@@ -12,7 +12,7 @@ import java.io.IOException
 class ColorDeserializer : StdDeserializer<Color?>(Color::class.java) {
 
     @Throws(IOException::class, JacksonException::class)
-    public override fun deserialize(jsonParser: JsonParser, deserializationContext: DeserializationContext): Color? {
+    override fun deserialize(jsonParser: JsonParser, deserializationContext: DeserializationContext): Color? {
         if (jsonParser.currentToken.isStructStart) {
             var alpha = 255
             var red = 0

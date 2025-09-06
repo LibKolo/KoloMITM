@@ -7,6 +7,7 @@ import io.github.mucute.qwq.kolomitm.event.PacketEvent
 import io.github.mucute.qwq.kolomitm.packet.PacketDirection
 import io.netty.util.ReferenceCountUtil
 import kotlinx.coroutines.*
+import net.kyori.adventure.text.Component
 import org.cloudburstmc.protocol.bedrock.BedrockClientSession
 import org.cloudburstmc.protocol.bedrock.BedrockPeer
 import org.cloudburstmc.protocol.bedrock.BedrockServerSession
@@ -58,7 +59,7 @@ class KoloSession(
             codec = koloMITM.codec
             packetHandler = object : BedrockPacketHandler {
 
-                override fun onDisconnect(reason: String) {
+                override fun onDisconnect(reason: Component) {
                     println("InboundSession Disconnected: $reason")
                     dispatchEvent(DisconnectEvent(reason), isConsumable = false)
                     release()
@@ -104,7 +105,7 @@ class KoloSession(
             codec = koloMITM.codec
             packetHandler = object : BedrockPacketHandler {
 
-                override fun onDisconnect(reason: String) {
+                override fun onDisconnect(reason: Component) {
                     println("OutboundSession Disconnected: $reason")
                     dispatchEvent(DisconnectEvent(reason), isConsumable = false)
                     release()

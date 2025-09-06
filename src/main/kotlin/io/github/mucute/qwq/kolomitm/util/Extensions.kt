@@ -8,6 +8,7 @@ import io.github.mucute.qwq.kolomitm.event.handler.EventHandler
 import io.github.mucute.qwq.kolomitm.session.EventReceiver
 import io.github.mucute.qwq.kolomitm.session.EventUnregister
 import io.github.mucute.qwq.kolomitm.session.KoloSession
+import net.kyori.adventure.text.Component
 import net.raphimc.minecraftauth.MinecraftAuth
 import net.raphimc.minecraftauth.step.bedrock.session.StepFullBedrockSession
 import net.raphimc.minecraftauth.step.msa.StepMsaDeviceCode
@@ -124,14 +125,15 @@ inline fun KoloSession.command(
             }.exceptionOrNull()?.let { exception ->
                 inbound(TextPacket().apply {
                     type = TextPacket.Type.RAW
-                    isNeedsTranslation = false
                     sourceName = ""
-                    message = """
+                    message = Component.text(
+                        """
                         |§cParse or execute command failed: 
                         |Input: /${commandName}${subList.joinToString(prefix = " ", separator = " ")}
                         |Helps: ${helps.joinToString(separator = "\n") { "/" + commandName + " " + it.joinToString(" ") }}
                         |Error: ${exception.message}
                     """.trimMargin()
+                    )
                     xuid = ""
                 })
             }
