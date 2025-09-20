@@ -67,7 +67,7 @@ fun KoloSession.proxyPassReceiver(
 
             val protocolVersion = packet.protocolVersion
             val targetCodec = if (autoCodec) {
-                AutoCodec.findBedrockCodec(protocolVersion, koloMITM.codec)
+                BedrockCodecs.bedrockCodecMap[protocolVersion] ?: koloMITM.codec
             } else {
                 koloMITM.codec
             }
@@ -221,9 +221,7 @@ fun KoloSession.proxyPassReceiver(
 }
 
 @Suppress("DEPRECATION")
-fun KoloSession.definitionReceiver(
-    coroutineEnabled: Boolean = false
-): EventUnregister {
+fun KoloSession.definitionReceiver(): EventUnregister {
     return packet<BedrockPacket> { packetEvent, _ ->
         val packet = packetEvent.packet
 
@@ -272,8 +270,6 @@ fun KoloSession.definitionReceiver(
             koloMITM.codecHelper?.blockDefinitions = blockDefinitions
             outboundSession?.peer?.codecHelper?.blockDefinitions = blockDefinitions
             inboundSession?.peer?.codecHelper?.blockDefinitions = blockDefinitions
-
-            this.coroutineEnabled = coroutineEnabled
         }
 
         if (packet is ItemComponentPacket) {

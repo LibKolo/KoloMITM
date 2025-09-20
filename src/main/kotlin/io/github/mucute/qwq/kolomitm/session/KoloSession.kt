@@ -44,8 +44,6 @@ class KoloSession(
 
     val eventReceivers = CopyOnWriteArrayList<EventReceiver>()
 
-    var coroutineEnabled = false
-
     private val inboundPacketQueue: Queue<Pair<BedrockPacket, Boolean>> = ArrayDeque()
 
     private val outboundPacketQueue: Queue<Pair<BedrockPacket, Boolean>> = ArrayDeque()
@@ -76,14 +74,7 @@ class KoloSession(
 
         override fun onPacket(wrapper: BedrockPacketWrapper) {
             val packet = ReferenceCountUtil.retain(wrapper.packet)
-
-            if (coroutineEnabled) {
-                inboundScope.launch {
-                    handlePacket(packet)
-                }
-            } else {
-                handlePacket(packet)
-            }
+            handlePacket(packet)
         }
 
         private fun handlePacket(packet: BedrockPacket) {
@@ -122,14 +113,7 @@ class KoloSession(
 
         override fun onPacket(wrapper: BedrockPacketWrapper) {
             val packet = ReferenceCountUtil.retain(wrapper.packet)
-
-            if (coroutineEnabled) {
-                outboundScope.launch {
-                    handlePacket(packet)
-                }
-            } else {
-                handlePacket(packet)
-            }
+            handlePacket(packet)
         }
 
         private fun handlePacket(packet: BedrockPacket) {

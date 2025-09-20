@@ -1,6 +1,5 @@
 package io.github.mucute.qwq.kolomitm.util
 
-import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec
 import org.cloudburstmc.protocol.bedrock.codec.v291.Bedrock_v291
 import org.cloudburstmc.protocol.bedrock.codec.v313.Bedrock_v313
 import org.cloudburstmc.protocol.bedrock.codec.v332.Bedrock_v332
@@ -54,10 +53,11 @@ import org.cloudburstmc.protocol.bedrock.codec.v800.Bedrock_v800
 import org.cloudburstmc.protocol.bedrock.codec.v818.Bedrock_v818
 import org.cloudburstmc.protocol.bedrock.codec.v819.Bedrock_v819
 import org.cloudburstmc.protocol.bedrock.codec.v827.Bedrock_v827
+import org.cloudburstmc.protocol.bedrock.codec.v843.Bedrock_v843
 
-object AutoCodec {
+object BedrockCodecs {
 
-    private val bedrockCodecMap = arrayOf(
+    val bedrockCodecArray = arrayOf(
         Bedrock_v291.CODEC, Bedrock_v313.CODEC, Bedrock_v332.CODEC,
         Bedrock_v340.CODEC, Bedrock_v354.CODEC, Bedrock_v361.CODEC,
         Bedrock_v388.CODEC, Bedrock_v389.CODEC, Bedrock_v390.CODEC,
@@ -75,11 +75,9 @@ object AutoCodec {
         Bedrock_v686.CODEC, Bedrock_v712.CODEC, Bedrock_v729.CODEC,
         Bedrock_v748.CODEC, Bedrock_v766.CODEC, Bedrock_v776.CODEC,
         Bedrock_v786.CODEC, Bedrock_v800.CODEC, Bedrock_v818.CODEC,
-        Bedrock_v819.CODEC, Bedrock_v827.CODEC
-    ).associateBy { it.protocolVersion }
+        Bedrock_v819.CODEC, Bedrock_v827.CODEC, Bedrock_v843.CODEC
+    )
 
-    fun findBedrockCodec(protocolVersion: Int, defaultCodec: BedrockCodec): BedrockCodec {
-        return bedrockCodecMap[protocolVersion] ?: defaultCodec
-    }
+    val bedrockCodecMap = bedrockCodecArray.associateBy { it.protocolVersion }
 
 }

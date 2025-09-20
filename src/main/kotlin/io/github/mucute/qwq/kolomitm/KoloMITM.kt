@@ -79,6 +79,7 @@ class KoloMITM {
             Definitions.loadBlockPalette()
             val koloMITM = KoloMITM()
             koloMITM.account = account
+            koloMITM.remoteAddress = InetSocketAddress("play.lbsg.net", 19132)
             koloMITM.koloSession.apply {
                 proxyPassReceiver()
                 definitionReceiver()
