@@ -1,8 +1,6 @@
 package io.github.mucute.qwq.kolomitm.event
 
-import net.kyori.adventure.text.Component
-
-class DisconnectEvent(val reason: Component) : KoloEvent {
+class DisconnectEvent(val reason: CharSequence) : KoloEvent {
 
     override fun toString(): String {
         return "DisconnectEvent(reason=$reason)"

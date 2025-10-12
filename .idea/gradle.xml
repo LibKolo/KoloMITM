@@ -18,6 +18,7 @@
               <build path="$PROJECT_DIR$/protocol" name="protocol">
                 <projects>
                   <project path="$PROJECT_DIR$/protocol" />
+                  <project path="$PROJECT_DIR$/protocol/adventure" />
                   <project path="$PROJECT_DIR$/protocol/bedrock-codec" />
                   <project path="$PROJECT_DIR$/protocol/bedrock-connection" />
                   <project path="$PROJECT_DIR$/protocol/common" />
@@ -36,6 +37,7 @@
             <option value="$PROJECT_DIR$/network/codec-rcon" />
             <option value="$PROJECT_DIR$/network/transport-raknet" />
             <option value="$PROJECT_DIR$/protocol" />
+            <option value="$PROJECT_DIR$/protocol/adventure" />
             <option value="$PROJECT_DIR$/protocol/bedrock-codec" />
             <option value="$PROJECT_DIR$/protocol/bedrock-connection" />
             <option value="$PROJECT_DIR$/protocol/common" />

@@ -1,10 +1,8 @@
 package io.github.mucute.qwq.kolomitm.event.receiver
 
 import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
-import com.fasterxml.jackson.databind.node.JsonNodeType
 import com.google.gson.JsonParser
 import io.github.mucute.qwq.kolomitm.definition.CameraPresetDefinition
 import io.github.mucute.qwq.kolomitm.definition.DataEntry
@@ -16,14 +14,19 @@ import io.github.mucute.qwq.kolomitm.jackson.NbtDefinitionSerializer
 import io.github.mucute.qwq.kolomitm.session.EventUnregister
 import io.github.mucute.qwq.kolomitm.session.KoloSession
 import io.github.mucute.qwq.kolomitm.util.*
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import net.kyori.adventure.text.Component
 import org.cloudburstmc.nbt.NbtMap
+import org.cloudburstmc.protocol.adventure.AdventureTextConverter
+import org.cloudburstmc.protocol.adventure.BedrockComponent
 import org.cloudburstmc.protocol.bedrock.codec.v729.serializer.InventoryContentSerializer_v729
 import org.cloudburstmc.protocol.bedrock.codec.v729.serializer.InventorySlotSerializer_v729
 import org.cloudburstmc.protocol.bedrock.data.EncodingSettings
 import org.cloudburstmc.protocol.bedrock.data.PacketCompressionAlgorithm
 import org.cloudburstmc.protocol.bedrock.data.auth.AuthType
 import org.cloudburstmc.protocol.bedrock.data.auth.CertificateChainPayload
+import org.cloudburstmc.protocol.bedrock.data.auth.TokenPayload
 import org.cloudburstmc.protocol.bedrock.data.definitions.ItemDefinition
 import org.cloudburstmc.protocol.bedrock.data.definitions.SimpleItemDefinition
 import org.cloudburstmc.protocol.bedrock.packet.*
@@ -31,18 +34,21 @@ import org.cloudburstmc.protocol.bedrock.util.EncryptionUtils
 import org.cloudburstmc.protocol.bedrock.util.JsonUtils
 import org.cloudburstmc.protocol.common.NamedDefinition
 import org.cloudburstmc.protocol.common.SimpleDefinitionRegistry
-import org.cloudburstmc.protocol.common.util.Color
 import org.jose4j.json.JsonUtil
 import org.jose4j.json.internal.json_simple.JSONArray
 import org.jose4j.json.internal.json_simple.JSONObject
 import org.jose4j.jws.JsonWebSignature
 import org.jose4j.jwx.HeaderParameterNames
+import java.awt.Color
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.security.KeyPair
 import java.util.*
+import kotlin.io.encoding.Base64
 
 private val UnlimitedEncodingSettings = EncodingSettings.UNLIMITED
+
+private val AdventureTextConverter = AdventureTextConverter()
 
 private val JsonMapper = ObjectMapper()
     .registerModule(
@@ -57,7 +63,7 @@ fun KoloSession.proxyPassReceiver(
     autoCodec: Boolean = true,
     patchCodec: Boolean = true
 ): EventUnregister {
-    var keyPair: KeyPair? = null
+    val keyPair = EncryptionUtils.createKeyPair()
     var loginPacket: LoginPacket? = null
 
     return packet<BedrockPacket> { packetEvent, _ ->
@@ -77,6 +83,7 @@ fun KoloSession.proxyPassReceiver(
                 blockDefinitions = Definitions.blockDefinition
                 cameraPresetDefinitions = Definitions.cameraDefinitions
                 encodingSettings = UnlimitedEncodingSettings
+                textConverter = AdventureTextConverter
             }
 
             if (protocolVersion != targetCodec.protocolVersion) {
@@ -118,73 +125,13 @@ fun KoloSession.proxyPassReceiver(
             packetEvent.consume()
 
             runCatching {
-                val chain = EncryptionUtils.validatePayload(packet.authPayload)
 
-                val payload = JsonMapper.valueToTree<JsonNode>(chain.rawIdentityClaims())
+                // TODO: Support new TokenPayload
 
-                if (payload["extraData"].nodeType != JsonNodeType.OBJECT) {
-                    throw RuntimeException("AuthData was not found!")
-                }
-
-                val extraDataJSONObject = JSONObject(
-                    JsonUtils.childAsType(
-                        chain.rawIdentityClaims(), "extraData",
-                        Map::class.java
-                    )
-                )
-
-                if (payload["identityPublicKey"].nodeType != JsonNodeType.STRING) {
-                    throw RuntimeException("Identity Public Key was not found!")
-                }
-                val identityPublicKey = EncryptionUtils.parseKey(payload["identityPublicKey"].textValue())
-
-                val clientJwt = packet.clientJwt
-                verifyJwt(clientJwt, identityPublicKey)
-
-                val jws = JsonWebSignature()
-                jws.compactSerialization = clientJwt
-
-                val skinDataJSONObject = JSONObject(JsonUtil.parseJson(jws.unverifiedPayload))
-
-
-                val account = koloMITM.account
-                if (account == null) {
-                    val chainData = (packet.authPayload as CertificateChainPayload).chain
-                    keyPair = EncryptionUtils.createKeyPair()
-
-                    val authData = ForgeryUtils.forgeOfflineAuthData(keyPair!!, extraDataJSONObject)
-                    val skinData = ForgeryUtils.forgeOfflineSkinData(keyPair!!, skinDataJSONObject)
-
-                    chainData.removeAt(chainData.size - 1)
-                    chainData.add(authData)
-
-                    loginPacket = LoginPacket().apply {
-                        this.clientJwt = skinData
-                        this.authPayload = CertificateChainPayload(chainData, AuthType.FULL)
-                        this.protocolVersion = koloMITM.codec.protocolVersion
-                    }
-
-                    koloMITM.bootClient()
-                } else {
-                    val mcChain = account.mcChain
-                    keyPair = KeyPair(mcChain.publicKey, mcChain.privateKey)
-
-                    val mojangPublicKey = ForgeryUtils.forgeMojangPublicKey()
-                    val onlineLoginChain = ForgeryUtils.forgeOnlineAuthData(mcChain, mojangPublicKey)
-                    val skinData =
-                        ForgeryUtils.forgeOnlineSkinData(account, skinDataJSONObject, koloMITM.remoteAddress)
-
-                    loginPacket = LoginPacket().apply {
-                        this.clientJwt = skinData
-                        this.authPayload = CertificateChainPayload(onlineLoginChain, AuthType.FULL)
-                        this.protocolVersion = koloMITM.codec.protocolVersion
-                    }
-
-                    koloMITM.bootClient()
-                }
             }.exceptionOrNull()?.let {
+                it.printStackTrace()
                 inbound(DisconnectPacket().apply {
-                    kickMessage = Component.text(it.message.toString())
+                    setKickMessage(BedrockComponent.of(Component.text(it.message.toString())))
                 })
             }
         }
@@ -205,8 +152,8 @@ fun KoloSession.proxyPassReceiver(
             val x5u = jws.getHeader(HeaderParameterNames.X509_URL)
             val serverKey = EncryptionUtils.parseKey(x5u)
             val key = EncryptionUtils.getSecretKey(
-                keyPair!!.private, serverKey,
-                Base64.getDecoder().decode(
+                koloMITM.account!!.mcChain.privateKey, serverKey,
+                Base64.decode(
                     JsonUtils.childAsType(
                         saltJwt, "salt",
                         String::class.java
@@ -386,7 +333,7 @@ fun KoloSession.echoCommandReceiver(): Pair<EventUnregister, EventUnregister> {
                     inbound(TextPacket().apply {
                         type = TextPacket.Type.RAW
                         sourceName = ""
-                        message = Component.text(it.joinToString(separator = " "))
+                        setMessage(BedrockComponent.of(Component.text(it.joinToString(separator = " "))))
                         xuid = ""
                     })
                 }

@@ -12,6 +12,7 @@ import net.kyori.adventure.text.Component
 import net.raphimc.minecraftauth.MinecraftAuth
 import net.raphimc.minecraftauth.step.bedrock.session.StepFullBedrockSession
 import net.raphimc.minecraftauth.step.msa.StepMsaDeviceCode
+import org.cloudburstmc.protocol.adventure.BedrockComponent
 import org.cloudburstmc.protocol.bedrock.data.command.CommandData
 import org.cloudburstmc.protocol.bedrock.data.command.CommandPermission
 import org.cloudburstmc.protocol.bedrock.packet.AvailableCommandsPacket
@@ -126,14 +127,14 @@ inline fun KoloSession.command(
                 inbound(TextPacket().apply {
                     type = TextPacket.Type.RAW
                     sourceName = ""
-                    message = Component.text(
+                    setMessage(BedrockComponent.of(Component.text(
                         """
                         |§cParse or execute command failed: 
                         |Input: /${commandName}${subList.joinToString(prefix = " ", separator = " ")}
                         |Helps: ${helps.joinToString(separator = "\n") { "/" + commandName + " " + it.joinToString(" ") }}
                         |Error: ${exception.message}
                     """.trimMargin()
-                    )
+                    )))
                     xuid = ""
                 })
             }

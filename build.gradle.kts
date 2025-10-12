@@ -5,6 +5,7 @@ plugins {
     id("application")
     id("com.gradleup.shadow") version "9.2.2"
     kotlin("jvm") version "2.2.20"
+    kotlin("plugin.serialization") version "2.2.20"
 }
 
 group = "io.github.mucute.qwq.kolomitm"
@@ -90,12 +91,15 @@ tasks["publishMavenPublicationToMavenLocal"].dependsOn(
     networkIncludedBuild.task(":codec-query:publishMavenPublicationToMavenLocal"),
     networkIncludedBuild.task(":codec-rcon:publishMavenPublicationToMavenLocal"),
     networkIncludedBuild.task(":transport-raknet:publishMavenPublicationToMavenLocal"),
+    protocolIncludedBuild.task(":adventure:publishMavenPublicationToMavenLocal"),
     protocolIncludedBuild.task(":bedrock-codec:publishMavenPublicationToMavenLocal"),
     protocolIncludedBuild.task(":common:publishMavenPublicationToMavenLocal"),
     protocolIncludedBuild.task(":bedrock-connection:publishMavenPublicationToMavenLocal")
 )
 
 dependencies {
+    api(libs.kotlinx.serialization.json)
+    api(libs.adventure)
     api(libs.bedrock.codec)
     api(libs.common)
     api(libs.bedrock.connection)

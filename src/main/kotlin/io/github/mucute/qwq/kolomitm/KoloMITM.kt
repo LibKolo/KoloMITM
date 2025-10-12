@@ -21,7 +21,7 @@ import org.cloudburstmc.protocol.bedrock.BedrockPeer
 import org.cloudburstmc.protocol.bedrock.BedrockPong
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper
-import org.cloudburstmc.protocol.bedrock.codec.v827.Bedrock_v827
+import org.cloudburstmc.protocol.bedrock.codec.v844.Bedrock_v844
 import org.cloudburstmc.protocol.bedrock.netty.initializer.BedrockChannelInitializer
 import org.cloudburstmc.protocol.bedrock.packet.RequestNetworkSettingsPacket
 import java.net.InetSocketAddress
@@ -31,7 +31,7 @@ import java.util.concurrent.ThreadLocalRandom
 @Suppress("MemberVisibilityCanBePrivate")
 class KoloMITM {
 
-    var codec: BedrockCodec = Bedrock_v827.CODEC
+    var codec: BedrockCodec = Bedrock_v844.CODEC
 
     var codecHelper: BedrockCodecHelper? = null
         internal set

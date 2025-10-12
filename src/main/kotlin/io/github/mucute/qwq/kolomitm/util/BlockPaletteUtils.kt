@@ -13,7 +13,7 @@ object BlockPaletteUtils {
             return -2 // This is special case
         }
         // Order required
-        val states = TreeMap<String?, Any?>(block.getCompound("states"))
+        val states = TreeMap(block.getCompound("states"))
         val statesBuilder = NbtMap.builder()
         statesBuilder.putAll(states)
 
@@ -36,6 +36,7 @@ object BlockPaletteUtils {
     private const val FNV1_32_INIT = -0x7ee3623b
     private const val FNV1_PRIME_32 = 0x01000193
 
+    @Suppress("FunctionName")
     private fun fnv1a_32(data: ByteArray): Int {
         var hash = FNV1_32_INIT
         for (datum in data) {

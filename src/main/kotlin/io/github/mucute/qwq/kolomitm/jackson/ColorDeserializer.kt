@@ -5,12 +5,10 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonToken
 import com.fasterxml.jackson.databind.DeserializationContext
 import com.fasterxml.jackson.databind.deser.std.StdDeserializer
-import org.cloudburstmc.protocol.common.util.Color
+import java.awt.Color
 import java.io.IOException
 
-
 class ColorDeserializer : StdDeserializer<Color?>(Color::class.java) {
-
     @Throws(IOException::class, JacksonException::class)
     override fun deserialize(jsonParser: JsonParser, deserializationContext: DeserializationContext): Color? {
         if (jsonParser.currentToken.isStructStart) {
@@ -20,7 +18,7 @@ class ColorDeserializer : StdDeserializer<Color?>(Color::class.java) {
             var blue = 0
 
             while (jsonParser.nextToken() != null) {
-                val fieldName: String = jsonParser.currentName
+                val fieldName = jsonParser.currentName()
                 jsonParser.nextToken()
                 when (fieldName) {
                     "a" -> alpha = jsonParser.intValue
@@ -30,7 +28,7 @@ class ColorDeserializer : StdDeserializer<Color?>(Color::class.java) {
                 }
             }
             return Color(red, green, blue, alpha)
-        } else if (jsonParser.currentToken === JsonToken.VALUE_NULL) {
+        } else if (jsonParser.currentToken == JsonToken.VALUE_NULL) {
             return null
         } else {
             throw deserializationContext.wrongTokenException(
@@ -41,5 +39,4 @@ class ColorDeserializer : StdDeserializer<Color?>(Color::class.java) {
             )
         }
     }
-
 }
