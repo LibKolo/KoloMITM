@@ -29,14 +29,14 @@ jobs:
     - name: Build with Gradle Wrapper
       run: chmod +x gradlew && ./gradlew build
     - name: Upload jar without dependencies
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         if-no-files-found: error
         name: KoloMITM-1.0-SNAPSHOT.jar
         path: build/libs/KoloMITM-1.0-SNAPSHOT.jar
 
     - name: Upload Upload jar with dependencies
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v5
       with:
         if-no-files-found: error
         name: KoloMITM-1.0-SNAPSHOT-all.jar
