@@ -1,6 +1,6 @@
 [versions]
 coroutines = "1.10.2"
-log4j = "2.25.2"
+log4j = "2.25.3"
 jackson = "2.20.1"
 minecraftauth = "4.1.2"
 serializationJson = "1.9.0"
