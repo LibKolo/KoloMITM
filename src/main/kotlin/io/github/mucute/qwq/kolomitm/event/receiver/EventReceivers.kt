@@ -1,9 +1,11 @@
 package io.github.mucute.qwq.kolomitm.event.receiver
 
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.module.SimpleModule
 import com.google.gson.JsonParser
+import io.github.mucute.qwq.kolomitm.data.session.AuthData
 import io.github.mucute.qwq.kolomitm.definition.CameraPresetDefinition
 import io.github.mucute.qwq.kolomitm.definition.DataEntry
 import io.github.mucute.qwq.kolomitm.definition.Definitions
@@ -14,9 +16,8 @@ import io.github.mucute.qwq.kolomitm.jackson.NbtDefinitionSerializer
 import io.github.mucute.qwq.kolomitm.session.EventUnregister
 import io.github.mucute.qwq.kolomitm.session.KoloSession
 import io.github.mucute.qwq.kolomitm.util.*
-import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.put
 import net.kyori.adventure.text.Component
+import net.raphimc.minecraftauth.bedrock.model.MinecraftMultiplayerToken
 import org.cloudburstmc.nbt.NbtMap
 import org.cloudburstmc.protocol.adventure.AdventureTextConverter
 import org.cloudburstmc.protocol.adventure.BedrockComponent
@@ -42,7 +43,8 @@ import org.jose4j.jwx.HeaderParameterNames
 import java.awt.Color
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.security.KeyPair
+import java.nio.charset.StandardCharsets
+import java.security.PublicKey
 import java.util.*
 import kotlin.io.encoding.Base64
 
@@ -58,6 +60,13 @@ private val JsonMapper = ObjectMapper()
             .addSerializer(NbtBlockDefinitionRegistry.NbtBlockDefinition::class.java, NbtDefinitionSerializer())
     )
     .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+
+fun verifyJwt(jwt: String, key: PublicKey): Boolean {
+    val jws = JsonWebSignature()
+    jws.key = key
+    jws.compactSerialization = jwt
+    return jws.verifySignature()
+}
 
 fun KoloSession.proxyPassReceiver(
     autoCodec: Boolean = true,
@@ -125,8 +134,57 @@ fun KoloSession.proxyPassReceiver(
             packetEvent.consume()
 
             runCatching {
+                val chain = EncryptionUtils.validatePayload(packet.authPayload)
+                val identityPublicKey = when (packet.authPayload) {
+                    is TokenPayload -> EncryptionUtils.parseKey(chain.identityClaims().identityPublicKey)
+                    is CertificateChainPayload -> {
+                        val payload = JsonMapper.valueToTree<JsonNode>(chain.rawIdentityClaims());
+                        EncryptionUtils.parseKey(payload.get("identityPublicKey").textValue());
+                    }
 
-                // TODO: Support new TokenPayload
+                    else -> error("Unsupported auth payload type")
+                }
+
+                val clientJwt = packet.clientJwt
+                verifyJwt(clientJwt, identityPublicKey)
+                val jws = JsonWebSignature()
+                jws.compactSerialization = clientJwt
+
+                val skinData = JSONObject(JsonUtil.parseJson(jws.unverifiedPayload))
+                val authData = if (koloMITM.account == null) {
+                    val identityData = chain.identityClaims().extraData
+                    AuthData(
+                        identityData.displayName,
+                        UUID.nameUUIDFromBytes(identityData.xuid.toByteArray()),
+                        identityData.xuid
+                    )
+                } else {
+                    val token = koloMITM.account!!.minecraftMultiplayerToken.getCached()
+                    AuthData(token.displayName, token.uuid, token.xuid)
+                }
+
+                val jwtSkinData = if (koloMITM.account == null) {
+                    ForgeryUtils.forgeOfflineSkinData(keyPair, skinData)
+                } else {
+                    ForgeryUtils.forgeOnlineSkinData(koloMITM.account!!, skinData, koloMITM.remoteAddress)
+                }
+
+                val authPayload = if (koloMITM.account == null) {
+                    CertificateChainPayload(
+                        listOf(ForgeryUtils.forgeOfflineAuthData(keyPair, authData)),
+                        AuthType.SELF_SIGNED
+                    )
+                } else {
+                    ForgeryUtils.forgeOnlineAuthData(koloMITM, koloMITM.account!!, ForgeryUtils.forgeMojangPublicKey())
+                }
+
+                loginPacket = LoginPacket().apply {
+                    this.clientJwt = jwtSkinData
+                    this.authPayload = authPayload
+                    this.protocolVersion = packet.protocolVersion
+                }
+
+                koloMITM.bootClient()
 
             }.exceptionOrNull()?.let {
                 it.printStackTrace()
@@ -152,7 +210,7 @@ fun KoloSession.proxyPassReceiver(
             val x5u = jws.getHeader(HeaderParameterNames.X509_URL)
             val serverKey = EncryptionUtils.parseKey(x5u)
             val key = EncryptionUtils.getSecretKey(
-                koloMITM.account!!.mcChain.privateKey, serverKey,
+                if (koloMITM.account == null) keyPair.private else koloMITM.account!!.sessionKeyPair.private, serverKey,
                 Base64.decode(
                     JsonUtils.childAsType(
                         saltJwt, "salt",

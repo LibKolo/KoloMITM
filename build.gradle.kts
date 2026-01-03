@@ -1,7 +1,9 @@
+@file:Suppress("VulnerableLibrariesLocal")
+
 plugins {
     `maven-publish`
     id("java")
-    id("java-library")
+    `java-library`
     id("application")
     id("com.gradleup.shadow") version "9.3.0"
     kotlin("jvm") version "2.3.0"
@@ -84,34 +86,18 @@ publishing {
     }
 }
 
-val networkIncludedBuild = gradle.includedBuild("network")
-val protocolIncludedBuild = gradle.includedBuild("protocol")
-
-tasks["publishMavenPublicationToMavenLocal"].dependsOn(
-    networkIncludedBuild.task(":codec-query:publishMavenPublicationToMavenLocal"),
-    networkIncludedBuild.task(":codec-rcon:publishMavenPublicationToMavenLocal"),
-    networkIncludedBuild.task(":transport-raknet:publishMavenPublicationToMavenLocal"),
-    protocolIncludedBuild.task(":adventure:publishMavenPublicationToMavenLocal"),
-    protocolIncludedBuild.task(":bedrock-codec:publishMavenPublicationToMavenLocal"),
-    protocolIncludedBuild.task(":common:publishMavenPublicationToMavenLocal"),
-    protocolIncludedBuild.task(":bedrock-connection:publishMavenPublicationToMavenLocal")
-)
-
 dependencies {
     api(libs.kotlinx.serialization.json)
     api(libs.adventure)
     api(libs.bedrock.codec)
     api(libs.common)
     api(libs.bedrock.connection)
-    api(libs.transport.raknet)
     api(libs.kotlinx.coroutines)
     api(libs.net.raphimc.minecraftauth)
     api(libs.jackson.databind)
     api(platform(libs.log4j.bom))
     api(libs.log4j.api)
     api(libs.log4j.core)
-    testApi(kotlin("test"))
-
 }
 
 tasks.test {

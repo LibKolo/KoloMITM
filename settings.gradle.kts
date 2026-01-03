@@ -3,6 +3,3 @@ plugins {
 }
 
 rootProject.name = "KoloMITM"
-
-includeBuild("network")
-includeBuild("protocol")

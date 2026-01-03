@@ -10,8 +10,10 @@ import io.github.mucute.qwq.kolomitm.session.EventUnregister
 import io.github.mucute.qwq.kolomitm.session.KoloSession
 import net.kyori.adventure.text.Component
 import net.raphimc.minecraftauth.MinecraftAuth
-import net.raphimc.minecraftauth.step.bedrock.session.StepFullBedrockSession
-import net.raphimc.minecraftauth.step.msa.StepMsaDeviceCode
+import net.raphimc.minecraftauth.bedrock.BedrockAuthManager
+import net.raphimc.minecraftauth.java.JavaAuthManager
+import net.raphimc.minecraftauth.msa.model.MsaDeviceCode
+import net.raphimc.minecraftauth.msa.service.impl.DeviceCodeMsaAuthService
 import org.cloudburstmc.protocol.adventure.BedrockComponent
 import org.cloudburstmc.protocol.bedrock.data.command.CommandData
 import org.cloudburstmc.protocol.bedrock.data.command.CommandPermission
@@ -21,6 +23,7 @@ import org.cloudburstmc.protocol.bedrock.packet.CommandRequestPacket
 import org.cloudburstmc.protocol.bedrock.packet.TextPacket
 import java.io.File
 import java.nio.file.Paths
+import java.util.function.Consumer
 
 fun KoloSession.on(eventReceiver: EventReceiver): EventUnregister {
     eventReceivers.add(eventReceiver)
@@ -55,43 +58,48 @@ private val gson = GsonBuilder()
     .create()
 
 fun saveAccount(
-    fullBedrockSession: StepFullBedrockSession.FullBedrockSession,
+    bedrockAuthManager: BedrockAuthManager,
     file: File? = Paths.get(".").resolve("bedrockSession.json").toFile()
 ) {
     if (file != null && !file.isDirectory) {
-        val json = gson.toJson(MinecraftAuth.BEDROCK_DEVICE_CODE_LOGIN.toJson(fullBedrockSession))
+        val json = gson.toJson(BedrockAuthManager.toJson(bedrockAuthManager))
         file.writeText(json)
     }
 }
 
 fun fetchAccount(
+    gameVersion: String,
     cache: Boolean = true,
     file: File? = Paths.get(".").resolve("bedrockSession.json").toFile(),
-    msaDeviceCodeCallback: StepMsaDeviceCode.MsaDeviceCodeCallback = StepMsaDeviceCode.MsaDeviceCodeCallback {
+    msaDeviceCodeCallback: Consumer<MsaDeviceCode> = {
         println("Go to ${it.directVerificationUri}")
     }
-): StepFullBedrockSession.FullBedrockSession {
+): BedrockAuthManager {
     if (cache && file != null && file.exists()) {
         val json = JsonParser.parseString(file.readText()).asJsonObject
-        return MinecraftAuth.BEDROCK_DEVICE_CODE_LOGIN.fromJson(json)
+        return BedrockAuthManager.fromJson(MinecraftAuth.createHttpClient(), gameVersion, json).apply {
+            minecraftSession.refresh()
+            minecraftCertificateChain.refresh()
+            minecraftMultiplayerToken.refresh()
+        }
     }
 
-    val fullBedrockSession = MinecraftAuth.BEDROCK_DEVICE_CODE_LOGIN.getFromInput(
-        MinecraftAuth.createHttpClient(),
-        msaDeviceCodeCallback
-    )
+    val bedrockAuthManagerBuilder = BedrockAuthManager.create(MinecraftAuth.createHttpClient(), gameVersion)
+    val bedrockAuthManager = bedrockAuthManagerBuilder
+        .login(::DeviceCodeMsaAuthService, msaDeviceCodeCallback)
+        .apply {
+            minecraftSession.refresh()
+            minecraftCertificateChain.refresh()
+            minecraftMultiplayerToken.refresh()
+        }
 
     if (cache) {
-        saveAccount(fullBedrockSession, file)
+        saveAccount(bedrockAuthManager, file)
     }
 
-    println("Username: ${fullBedrockSession.mcChain.displayName}")
-    println("Expired: ${fullBedrockSession.isExpired}")
-    return fullBedrockSession
-}
-
-fun StepFullBedrockSession.FullBedrockSession.refresh(): StepFullBedrockSession.FullBedrockSession {
-    return MinecraftAuth.BEDROCK_DEVICE_CODE_LOGIN.refresh(MinecraftAuth.createHttpClient(), this)
+    println("Username: ${bedrockAuthManager.minecraftCertificateChain.cached.identityDisplayName}")
+    println("MSA Access Token: ${bedrockAuthManager.msaToken.cached.accessToken}")
+    return bedrockAuthManager
 }
 
 inline fun KoloSession.command(

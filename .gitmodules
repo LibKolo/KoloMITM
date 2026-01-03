@@ -1,9 +1,0 @@
-[submodule "network"]
-	path = network
-	url = https://github.com/mucute-qwq/network.git
-[submodule "protocol"]
-	path = protocol
-	url = https://github.com/mucute-qwq/protocol.git
-[submodule "natives"]
-	path = natives
-	url = https://github.com/mucute-qwq/natives.git

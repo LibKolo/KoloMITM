@@ -3,9 +3,9 @@ package io.github.mucute.qwq.kolomitm
 import io.github.mucute.qwq.kolomitm.definition.Definitions
 import io.github.mucute.qwq.kolomitm.event.receiver.*
 import io.github.mucute.qwq.kolomitm.session.KoloSession
+import io.github.mucute.qwq.kolomitm.util.BedrockCodecs
 import io.github.mucute.qwq.kolomitm.util.PackDownloader
 import io.github.mucute.qwq.kolomitm.util.fetchAccount
-import io.github.mucute.qwq.kolomitm.util.refresh
 import io.github.mucute.qwq.kolomitm.util.saveAccount
 import io.netty.bootstrap.Bootstrap
 import io.netty.bootstrap.ServerBootstrap
@@ -13,7 +13,7 @@ import io.netty.channel.Channel
 import io.netty.channel.EventLoopGroup
 import io.netty.channel.nio.NioEventLoopGroup
 import io.netty.channel.socket.nio.NioDatagramChannel
-import net.raphimc.minecraftauth.step.bedrock.session.StepFullBedrockSession
+import net.raphimc.minecraftauth.bedrock.BedrockAuthManager
 import org.cloudburstmc.netty.channel.raknet.RakChannelFactory
 import org.cloudburstmc.netty.channel.raknet.config.RakChannelOption
 import org.cloudburstmc.netty.handler.codec.raknet.server.RakServerRateLimiter
@@ -21,7 +21,6 @@ import org.cloudburstmc.protocol.bedrock.BedrockPeer
 import org.cloudburstmc.protocol.bedrock.BedrockPong
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodec
 import org.cloudburstmc.protocol.bedrock.codec.BedrockCodecHelper
-import org.cloudburstmc.protocol.bedrock.codec.v844.Bedrock_v844
 import org.cloudburstmc.protocol.bedrock.netty.initializer.BedrockChannelInitializer
 import org.cloudburstmc.protocol.bedrock.packet.RequestNetworkSettingsPacket
 import java.net.InetSocketAddress
@@ -31,7 +30,7 @@ import java.util.concurrent.ThreadLocalRandom
 @Suppress("MemberVisibilityCanBePrivate")
 class KoloMITM {
 
-    var codec: BedrockCodec = Bedrock_v844.CODEC
+    var codec: BedrockCodec = BedrockCodecs.bedrockCodecArray.last()
 
     var codecHelper: BedrockCodecHelper? = null
         internal set
@@ -47,7 +46,7 @@ class KoloMITM {
         .subMotd("A MITM cheat for Minecraft: Bedrock Edition")
         .nintendoLimited(false)
 
-    var account: StepFullBedrockSession.FullBedrockSession? = null
+    var account: BedrockAuthManager? = null
 
     var localAddress = InetSocketAddress("0.0.0.0", 19132)
 
@@ -70,16 +69,19 @@ class KoloMITM {
         fun main(args: Array<String>) {
             val waigamePasswordFile = Paths.get(".").resolve("waigamePassword.txt").toFile()
             val waigamePassword = if (waigamePasswordFile.isFile) waigamePasswordFile.readText() else null
-            var account = fetchAccount()
-            if (account.isExpired) {
+            val account = fetchAccount(BedrockCodecs.bedrockCodecArray.last().minecraftVersion)
+            if (account.minecraftCertificateChain.cached.isExpired) {
                 println("Expired account, refreshing and saving")
-                account = account.refresh().also { saveAccount(it) }
+                account.minecraftSession.refresh()
+                account.minecraftCertificateChain.refresh()
+                account.minecraftMultiplayerToken.refresh()
+                saveAccount(account)
             }
 
             Definitions.loadBlockPalette()
             val koloMITM = KoloMITM()
             koloMITM.account = account
-            koloMITM.remoteAddress = InetSocketAddress("play.lbsg.net", 19132)
+            koloMITM.remoteAddress = InetSocketAddress("ntest.easecation.net", 19132)
             koloMITM.koloSession.apply {
                 proxyPassReceiver()
                 definitionReceiver()

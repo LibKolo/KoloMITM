@@ -54,6 +54,9 @@ import org.cloudburstmc.protocol.bedrock.codec.v818.Bedrock_v818
 import org.cloudburstmc.protocol.bedrock.codec.v819.Bedrock_v819
 import org.cloudburstmc.protocol.bedrock.codec.v827.Bedrock_v827
 import org.cloudburstmc.protocol.bedrock.codec.v844.Bedrock_v844
+import org.cloudburstmc.protocol.bedrock.codec.v859.Bedrock_v859
+import org.cloudburstmc.protocol.bedrock.codec.v860.Bedrock_v860
+import org.cloudburstmc.protocol.bedrock.codec.v898.Bedrock_v898
 
 object BedrockCodecs {
 
@@ -75,7 +78,8 @@ object BedrockCodecs {
         Bedrock_v686.CODEC, Bedrock_v712.CODEC, Bedrock_v729.CODEC,
         Bedrock_v748.CODEC, Bedrock_v766.CODEC, Bedrock_v776.CODEC,
         Bedrock_v786.CODEC, Bedrock_v800.CODEC, Bedrock_v818.CODEC,
-        Bedrock_v819.CODEC, Bedrock_v827.CODEC, Bedrock_v844.CODEC
+        Bedrock_v819.CODEC, Bedrock_v827.CODEC, Bedrock_v844.CODEC,
+        Bedrock_v859.CODEC, Bedrock_v860.CODEC, Bedrock_v898.CODEC
     )
 
     val bedrockCodecMap = bedrockCodecArray.associateBy { it.protocolVersion }
