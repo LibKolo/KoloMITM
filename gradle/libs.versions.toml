@@ -1,7 +1,7 @@
 [versions]
 coroutines = "1.10.2"
 log4j = "2.25.3"
-jackson = "2.20.1"
+jackson = "2.21.0"
 minecraftauth = "5.0.0"
 serializationJson = "1.9.0"
 includedBuildName = "3.0.0.Beta11-SNAPSHOT"
